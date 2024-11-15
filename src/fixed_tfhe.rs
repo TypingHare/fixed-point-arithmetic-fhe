@@ -104,18 +104,10 @@ impl Mul for TfheFixed32 {
     fn mul(self, rhs: Self) -> Self::Output {
         let lhs_val_i64: FheInt64 = self.value.cast_into();
         let rhs_val_i64: FheInt64 = rhs.value.cast_into();
-        let product_i64: FheInt64 = (lhs_val_i64 * rhs_val_i64) >> 32u32;
+        let product_i64: FheInt64 = (lhs_val_i64 * rhs_val_i64) >> self.exp;
         let product_i32: FheInt32 = product_i64.cast_into();
 
         Self::new(product_i32, self.exp)
-    }
-}
-
-impl Div for TfheFixed32 {
-    type Output = TfheFixed32;
-
-    fn div(self, other: Self) -> Self::Output {
-        self
     }
 }
 
