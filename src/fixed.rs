@@ -4,6 +4,7 @@ use std::ops::{
     Mul,
     Sub,
 };
+use tfhe::core_crypto::prelude::SignedInteger;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Fixed32 {
@@ -172,11 +173,11 @@ mod tests {
     #[test]
     fn test_mul_same_exp() {
         // (10 * 20) >> 4 = 200 >> 4 = 12
-        let a = Fixed32::new(10, 4);
-        let b = Fixed32::new(20, 4);
+        let a = Fixed32::from(2.47, 24);
+        let b = Fixed32::from(3.19, 24);
         let result = a * b;
-        assert_eq!(result.value, 12);
-        assert_eq!(result.exp, 4);
+        assert_eq!(result.to_f32(), 7.8793);
+        assert_eq!(result.exp, 24);
     }
 
     #[test]
