@@ -59,7 +59,7 @@ impl TfheFixed32 {
         if self.exp != encrypted_one.exp {
             panic!("The encrypted one should have the same exponential!")
         }
-        let quotient = encrypted_one.value / &self.value;
+        // let quotient = encrypted_one.value / &self.value;
         // let quotient = (1 << self.exp) / &self.value;
 
         TfheFixed32::new(self.value, self.exp)
@@ -115,18 +115,6 @@ impl Div for TfheFixed32 {
     type Output = TfheFixed32;
 
     fn div(self, other: Self) -> Self::Output {
-        // if self.exp != other.exp {
-        //     panic!(
-        //         "Only support multiplication between two fixed-point \
-        //     numbers with the same exponential!"
-        //     )
-        // }
-        //
-        // if other.value == 0 {
-        //     panic!("Division by zero error!");
-        // }
-        //
-        // self * other.reciprocal()
         self
     }
 }
@@ -134,11 +122,9 @@ impl Div for TfheFixed32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::fixed::Fixed32;
     use tfhe::{
         generate_keys,
         set_server_key,
-        Config,
         ConfigBuilder,
     };
 
@@ -186,7 +172,4 @@ mod tests {
         assert_eq!(result_val, 7.8793);
         assert_eq!(result.exp, 24);
     }
-
-    #[test]
-    fn test_div() {}
 }
