@@ -3,6 +3,7 @@ use crate::fixed::Fixed32;
 mod fixed;
 mod fixed_tfhe;
 mod measure;
+mod float;
 
 fn main() {
     // let x = 1160f32;

@@ -16,6 +16,16 @@ pub struct Fixed32 {
     // number. It represents the negative power of 2 used to scale the value.
     exp: i32,
 }
+// 4.5, 16 bits
+// 4.5 * 10 (exp = 1) => (45, 1)
+// 0.5 => (5, 1)
+// (45, 1) / (5, 1) => (9, 0)
+// 2.55 / 2 => (255, 2) / (2, 0) => (127, 2) => 1.27
+// 1 / 2.75 => (1, 0) / (275, 2) => (36, 2) 0.36
+// (0.0 ~ 256.0)
+// 4.5 * 10^3 => (4500, 3)
+// 2.55 / 2 => (2550, 3) / (2000, 3) => (1270, 3)
+// 1 / 2.75 => (1000, 3) / (2750, 3) => (0, 3)
 
 impl Fixed32 {
     pub fn new(value: i32, exp: i32) -> Self {
@@ -31,6 +41,7 @@ impl Fixed32 {
     }
 
     pub fn to_f32(self) -> f32 {
+        //
         self.value as f32 / (1 << self.exp) as f32
     }
 
@@ -126,7 +137,8 @@ impl Div for Fixed32 {
             panic!("Division by zero error!");
         }
 
-        self * other.reciprocal()
+        let quotient = self.value / other.value * (1 << self.exp);
+        Self::new(quotient, self.exp)
     }
 }
 
@@ -189,20 +201,36 @@ mod tests {
     }
 
     #[test]
-    fn test_div_same_exp() {
-        let a = Fixed32 {
-            value: 1158,
-            exp: 5,
-        };
-        let b = Fixed32 {
-            value: 2058,
-            exp: 5,
-        };
-        let result = a / b;
+    fn test_div_divisible() {
+        let a = 20.;
+        let b = 5.;
+        let a_fixed = Fixed32::from(a, 5);
+        let b_fixed = Fixed32::from(b, 5);
+        let result = a_fixed / b_fixed;
         println!("{}", result.value);
 
         let result_float = result.to_f32();
-        let expected_result = 1158.0 / 2058.0;
+        let expected_result = a / b;
+
+        assert!(
+            (result_float - expected_result).abs() < 0.1,
+            "Test case 1 failed: got {}, expected {}",
+            result_float,
+            expected_result
+        );
+    }
+
+    #[test]
+    fn test_div_not_divisible() {
+        let a = 20.;
+        let b = 6.;
+        let a_fixed = Fixed32::from(a, 5);
+        let b_fixed = Fixed32::from(b, 5);
+        let result = a_fixed / b_fixed;
+        println!("{}", result.value);
+
+        let result_float = result.to_f32();
+        let expected_result = a / b;
 
         assert!(
             (result_float - expected_result).abs() < 0.1,

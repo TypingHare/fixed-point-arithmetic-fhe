@@ -54,16 +54,6 @@ impl TfheFixed32 {
         let val_i32: i32 = self.value.decrypt(client_key);
         val_i32 as f32 / (1 << self.exp) as f32
     }
-
-    pub fn reciprocal(self, encrypted_one: TfheFixed32) -> TfheFixed32 {
-        if self.exp != encrypted_one.exp {
-            panic!("The encrypted one should have the same exponential!")
-        }
-        // let quotient = encrypted_one.value / &self.value;
-        // let quotient = (1 << self.exp) / &self.value;
-
-        TfheFixed32::new(self.value, self.exp)
-    }
 }
 
 impl Add for TfheFixed32 {
@@ -108,6 +98,15 @@ impl Mul for TfheFixed32 {
         let product_i32: FheInt32 = product_i64.cast_into();
 
         Self::new(product_i32, self.exp)
+    }
+}
+
+impl Div for TfheFixed32 {
+    type Output = Self;
+
+    fn div(self, other: Self) -> Self::Output {
+        let quotient = self.value / other.value * (1 << self.exp);
+        Self::new(quotient, self.exp)
     }
 }
 
