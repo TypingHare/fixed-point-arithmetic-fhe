@@ -54,6 +54,31 @@ impl TfheFixed32 {
         let val_i32: i32 = self.value.decrypt(client_key);
         val_i32 as f32 / (1 << self.exp) as f32
     }
+
+    pub fn reciprocal(self) -> f32 {
+        // FIXME
+        let quotient: i32 = (1 << self.exp) / self.value;
+        let result = TfheFixed32::new(quotient, self.exp);
+
+        if quotient > 0 {
+            // Apply Newton-Raphson method
+            let guess = TfheFixed32{
+                value: quotient << self.exp,
+                exp: self.exp,
+            };
+            let two = TfheFixed32::from(2f32, self.exp);
+            let mut result = guess;
+            for _ in 0..5 {
+                result = result * (two - result * self)
+            }
+
+            result
+        } else {
+            // quotient less than 1, how to find the initial guess?
+            // sin(x)?
+            result
+        }
+    }
 }
 
 impl Add for TfheFixed32 {

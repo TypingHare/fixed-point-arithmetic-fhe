@@ -46,6 +46,7 @@ impl Fixed32 {
     }
 
     pub fn reciprocal(self) -> Self {
+        // FIXED ME
         let quotient: i32 = (1 << self.exp) / self.value;
         let result = Fixed32::new(quotient, self.exp);
 
@@ -63,6 +64,8 @@ impl Fixed32 {
 
             result
         } else {
+            // quotient less than 1, how to find the initial guess?
+            // sin(x)?
             result
         }
     }
@@ -137,14 +140,19 @@ impl Div for Fixed32 {
             panic!("Division by zero error!");
         }
 
-        let quotient = self.value / other.value * (1 << self.exp);
-        Self::new(quotient, self.exp)
+        // Not accurate
+        // let quotient = self.value / other.value * (1 << self.exp);
+        // Self::new(quotient, self.exp)
+
+        // Not accurate when `other` is greater than 1
+        self * other.reciprocal()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::measure::diff;
 
     #[test]
     fn test_add_same_exp() {
@@ -216,6 +224,45 @@ mod tests {
             (result_float - expected_result).abs() < 0.1,
             "Test case 1 failed: got {}, expected {}",
             result_float,
+            expected_result
+        );
+    }
+
+    #[test]
+    fn test_reciprocal() {
+        let a = 2.;
+        let a_fixed = Fixed32::from(a, 16);
+        let a_reciprocal_fixed = a_fixed.reciprocal();
+
+        let result = a_reciprocal_fixed.to_f32();
+        let expected_result = 1. / a;
+        println!("{}", result);
+
+        assert!(
+            diff(expected_result, result) < 0.1,
+            "Test case failed: got {}, expected {}",
+            result,
+            expected_result
+        )
+    }
+
+    #[test]
+    fn test_div_dividend_less_than_1() {
+        let a = 20.;
+        let b = 0.31;
+        let a_fixed = Fixed32::from(a, 24);
+        let b_fixed = Fixed32::from(b, 24);
+        let result = a_fixed / b_fixed;
+
+        let result = result.to_f32();
+        let expected_result = a / b;
+        println!("{}", result);
+        println!("{}", expected_result);
+
+        assert!(
+            diff(expected_result, result) < 0.1,
+            "Test case failed: got {}, expected {}",
+            result,
             expected_result
         );
     }
