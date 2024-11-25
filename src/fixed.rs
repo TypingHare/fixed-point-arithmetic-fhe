@@ -16,16 +16,6 @@ pub struct Fixed32 {
     // number. It represents the negative power of 2 used to scale the value.
     exp: i32,
 }
-// 4.5, 16 bits
-// 4.5 * 10 (exp = 1) => (45, 1)
-// 0.5 => (5, 1)
-// (45, 1) / (5, 1) => (9, 0)
-// 2.55 / 2 => (255, 2) / (2, 0) => (127, 2) => 1.27
-// 1 / 2.75 => (1, 0) / (275, 2) => (36, 2) 0.36
-// (0.0 ~ 256.0)
-// 4.5 * 10^3 => (4500, 3)
-// 2.55 / 2 => (2550, 3) / (2000, 3) => (1270, 3)
-// 1 / 2.75 => (1000, 3) / (2750, 3) => (0, 3)
 
 impl Fixed32 {
     pub fn new(value: i32, exp: i32) -> Self {
@@ -33,6 +23,7 @@ impl Fixed32 {
     }
 
     pub fn from<T: Into<f32>>(value: T, exp: i32) -> Self {
+        // Converts a floating-point number into a fixed-point number
         let val: f32 = value.into() * (1 << exp) as f32;
         Self {
             value: val.round() as i32,
@@ -41,33 +32,36 @@ impl Fixed32 {
     }
 
     pub fn to_f32(self) -> f32 {
-        //
+        // Converts a fixed-point number to a floating-point number
         self.value as f32 / (1 << self.exp) as f32
     }
 
-    pub fn reciprocal(self) -> Self {
-        // FIXED ME
-        let quotient: i32 = (1 << self.exp) / self.value;
-        let result = Fixed32::new(quotient, self.exp);
-
-        if quotient > 0 {
-            // Apply Newton-Raphson method
-            let guess = Fixed32 {
-                value: quotient << self.exp,
-                exp: self.exp,
-            };
-            let two = Fixed32::from(2f32, self.exp);
-            let mut result = guess;
-            for _ in 0..5 {
-                result = result * (two - result * self)
+    pub fn get_leading_one_index(self) -> i32 {
+        // Find the leading 1 in the name value using bitwise operations
+        let mut i = 31;
+        while i > 0 {
+            if (1 << i) & self.value > 0 {
+                return i;
             }
-
-            result
-        } else {
-            // quotient less than 1, how to find the initial guess?
-            // sin(x)?
-            result
+            i -= 1;
         }
+
+        0
+    }
+
+    pub fn reciprocal(self) -> Self {
+        let leading_one_index = self.get_leading_one_index();
+        let guess: i32 = 1 << (self.exp * 2 - leading_one_index);
+
+        // Apply Newton-Raphson method
+        let mut result = Fixed32::new(guess, self.exp);
+        for _ in 0..5 {
+            let t1: Fixed32 = result * self;
+            let t2: i32 = (1 << (self.exp + 1)) - t1.value;
+            result = result * Fixed32::new(t2, self.exp);
+        }
+
+        result
     }
 }
 
@@ -228,22 +222,41 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_reciprocal() {
-        let a = 2.;
-        let a_fixed = Fixed32::from(a, 16);
-        let a_reciprocal_fixed = a_fixed.reciprocal();
+    fn test_reciprocal(divisor: f32) {
+        let fixed = Fixed32::from(divisor, 24);
+        let reciprocal_fixed = fixed.reciprocal();
 
-        let result = a_reciprocal_fixed.to_f32();
-        let expected_result = 1. / a;
-        println!("{}", result);
+        let result = reciprocal_fixed.to_f32();
+        let expected_result = 1. / divisor;
+        println!("result: {}", result);
+        println!("expected_result: {}", expected_result);
 
         assert!(
             diff(expected_result, result) < 0.1,
-            "Test case failed: got {}, expected {}",
+            "test case failed: got {}, expected {}",
             result,
             expected_result
         )
+    }
+
+    #[test]
+    fn test_reciprocal_1() {
+        test_reciprocal(0.22)
+    }
+
+    #[test]
+    fn test_reciprocal_2() {
+        test_reciprocal(3.15)
+    }
+
+    #[test]
+    fn test_reciprocal_3() {
+        test_reciprocal(107.4)
+    }
+
+    #[test]
+    fn test_reciprocal_4() {
+        test_reciprocal(0.008375)
     }
 
     #[test]
@@ -261,7 +274,7 @@ mod tests {
 
         assert!(
             diff(expected_result, result) < 0.1,
-            "Test case failed: got {}, expected {}",
+            "test case failed: got {}, expected {}",
             result,
             expected_result
         );
@@ -281,7 +294,7 @@ mod tests {
 
         assert!(
             (result_float - expected_result).abs() < 0.1,
-            "Test case 1 failed: got {}, expected {}",
+            "test case 1 failed: got {}, expected {}",
             result_float,
             expected_result
         );
